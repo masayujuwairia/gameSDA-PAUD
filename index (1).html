@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Main Yuk! Permainan Belajar PAUD dan SD Fase A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<!--
+=====================================================================
+ MINI GDD
+ JUDUL      : Main Yuk! (3 permainan dalam 1 aplikasi)
+ PEMAIN     : anak PAUD (4-6 th) dan SD Fase A (kelas 1-2), main sendiri atau dipandu guru
+ TUJUAN     : 1) Ibu Berkata: menyimak perintah, kontrol diri (inhibisi), kosakata gerak dan anggota tubuh, gerak lokomotor/non-lokomotor
+              2) Koki & Pasar: membilang 1-10, mencocokkan jumlah dengan lambang bilangan, klasifikasi bahan, mengikuti urutan, peran sosial
+              3) Tebak Kartu: kosakata benda/hewan, menyimak petunjuk, bernalar dari ciri, mengenal huruf awal kata
+ CORE LOOP  : dengar perintah (suara) -> ketuk/bergerak -> umpan balik suara+animasi -> bintang & stiker -> level naik
+ KONTROL    : sentuh / klik (tombol besar), semua instruksi dibacakan suara Bahasa Indonesia
+ MENANG     : bintang 1-3 per putaran (minimal 1 bintang, selalu dihargai), stiker baru tiap putaran selesai
+ PROGRESI   : 3 level (Mudah, Sedang, Seru) per permainan
+ LAYAR      : Beranda -> Pilih permainan -> Pilih level -> Main -> Hasil; Panel Guru (dikunci soal perkalian)
+ KONTEN     : semua data ada di bagian "KONTEN" di bawah, guru bisa mengganti tanpa menyentuh logika
+=====================================================================
+-->
+<style>
+:root{
+  --bg:#fff6e5;--ink:#3d2c29;--muted:#8a7468;--card:#fff;--line:#f0dfc8;
+  --pri:#ff7a59;--pri-d:#d9573a;--teal:#2bb3a3;--teal-d:#1d8a7d;--yel:#ffc93c;--yel-d:#d9a200;
+  --grn:#4cc265;--grn-d:#2f9447;--red:#f05454;--red-d:#c43a3a;--blu:#4f8ef7;--blu-d:#2f6bd0;--pur:#9b6bdf;--pur-d:#7448b8;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Fredoka",ui-rounded,"SF Pro Rounded","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+body{background-image:radial-gradient(circle at 6% 8%,#ffe6bf 0 70px,transparent 71px),radial-gradient(circle at 96% 92%,#d6f2ec 0 110px,transparent 111px),radial-gradient(circle at 92% 12%,#fde0ea 0 46px,transparent 47px);background-attachment:fixed}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation;padding:0}
+button:focus-visible{outline:4px solid var(--blu);outline-offset:3px}
+.top{display:flex;align-items:center;gap:10px;padding:12px 14px;max-width:1100px;margin:0 auto}
+.top h1{flex:1;margin:0;font-size:clamp(22px,3.4vw,34px);text-align:center;font-weight:700;letter-spacing:.3px}
+.logo span{color:var(--pri)}
+.icon-btn{width:58px;height:58px;flex:none;border-radius:18px;background:#fff;box-shadow:0 5px 0 var(--line);font-size:28px;display:grid;place-items:center}
+.icon-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--line)}
+.pill{background:#fff;border-radius:999px;padding:9px 16px;font-weight:700;box-shadow:0 5px 0 var(--line);font-size:21px;white-space:nowrap;min-width:58px;text-align:center}
+main{max-width:1100px;margin:0 auto;padding:4px 14px 32px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:66px;padding:12px 26px;border-radius:22px;
+  font-size:clamp(20px,2.6vw,27px);font-weight:700;color:#fff;background:var(--c,var(--pri));box-shadow:0 6px 0 var(--cd,var(--pri-d));transition:transform .08s}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--cd,var(--pri-d))}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.hello{font-size:clamp(22px,3vw,30px);text-align:center;margin:6px 0 18px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+.tile{background:var(--c);color:#fff;border-radius:30px;padding:22px 22px 18px;box-shadow:0 9px 0 var(--cd);text-align:left;min-height:230px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;transition:transform .1s}
+.tile:active{transform:translateY(6px);box-shadow:0 3px 0 var(--cd)}
+.tile::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.14)}
+.tile .te{font-size:76px;line-height:1.1}
+.tile .tt{font-size:clamp(25px,3vw,31px);font-weight:700}
+.tile .ts{font-size:18px;opacity:.95;line-height:1.3}
+.tile .tstar{margin-top:auto;font-size:24px;letter-spacing:2px}
+.home-foot{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.sub{font-size:clamp(21px,2.6vw,26px);margin:22px 0 12px;font-weight:700}
+.intro{display:flex;gap:16px;align-items:center;background:#fff;border-radius:26px;padding:16px 20px;box-shadow:0 6px 0 var(--line);font-size:clamp(19px,2.4vw,24px);line-height:1.35}
+.intro-e{font-size:64px;flex:none}
+.levels{display:flex;gap:16px;flex-wrap:wrap}
+.levels .btn{flex:1 1 200px;min-height:92px;font-size:clamp(24px,3vw,30px)}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:#fff;border-radius:999px;padding:12px 20px;font-size:21px;font-weight:600;box-shadow:0 5px 0 var(--line);min-height:56px}
+.chip.on{background:var(--blu);color:#fff;box-shadow:0 5px 0 var(--blu-d)}
+.dots{display:flex;gap:8px;justify-content:center;margin:2px 0 14px;flex-wrap:wrap}
+.dots i{width:18px;height:18px;border-radius:50%;background:#ead9c1;display:block;transition:background .3s,transform .3s}
+.dots i.ok{background:var(--grn);transform:scale(1.15)}
+.dots i.no{background:var(--yel)}
+.dots i.now{box-shadow:0 0 0 4px rgba(79,142,247,.4)}
+.bubble{background:#fff;border-radius:28px;padding:16px 22px;box-shadow:0 6px 0 var(--line);position:relative;font-size:clamp(22px,3vw,32px);font-weight:600;line-height:1.3}
+.speaker,.cust{font-size:clamp(70px,11vw,110px);line-height:1;flex:none;filter:drop-shadow(0 6px 0 rgba(0,0,0,.08))}
+.row{display:flex;align-items:center;gap:14px}
+.timer{height:16px;background:#ead9c1;border-radius:99px;overflow:hidden;margin:16px 0}
+.timer>i{display:block;height:100%;width:100%;background:var(--teal);border-radius:99px;transform-origin:left}
+@keyframes drain{from{transform:scaleX(1);background:var(--teal)}70%{background:var(--yel)}to{transform:scaleX(0);background:var(--red)}}
+/* Ibu Berkata */
+.stage{display:flex;align-items:center;gap:16px}
+.stage .bubble{flex:1;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.cue{display:inline-block;align-self:flex-start;font-size:clamp(18px,2.4vw,24px);padding:4px 14px;border-radius:999px;background:#eee;color:#999;min-height:34px}
+.cue.on{background:var(--grn);color:#fff;animation:glow 1s ease-in-out infinite alternate}
+.cue.fake{background:var(--blu);color:#fff}
+.cue.none{background:#efe6da;color:#b5a593}
+@keyframes glow{to{box-shadow:0 0 0 8px rgba(76,194,101,.25)}}
+@media (max-width:520px){.stage{gap:8px}.stage .speaker{font-size:50px}.stage .bubble{padding:12px 14px}.cue.none{font-size:15px}}
+.cmd{font-size:clamp(26px,4vw,42px);font-weight:700}
+.cmd-e{font-size:56px;line-height:1}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+.opt{background:#fff;border-radius:26px;box-shadow:0 7px 0 var(--line);min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:66px;transition:transform .1s}
+.opt span{font-size:clamp(18px,2.2vw,22px);font-weight:600;color:var(--ink)}
+.opt:active{transform:translateY(5px)}
+.opt.diam{background:#ece4ff;box-shadow:0 7px 0 #cdbdf0}
+.opt.good{background:#d9f5df;box-shadow:0 7px 0 var(--grn);outline:5px solid var(--grn)}
+.opt.bad{background:#fde0e0;box-shadow:0 7px 0 var(--red)}
+.kelas-stage{background:#fff;border-radius:34px;box-shadow:0 8px 0 var(--line);padding:28px;text-align:center;min-height:52vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:8px solid transparent;transition:border-color .3s}
+.kelas-stage.ibu{border-color:var(--grn)}
+.kelas-stage .cue{align-self:center;font-size:clamp(26px,4vw,40px);padding:8px 26px}
+.kelas-e{font-size:clamp(110px,20vw,200px);line-height:1}
+.kelas-t{font-size:clamp(30px,5vw,56px);font-weight:700}
+.kelas-ctrl{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+/* Pasar & Koki */
+.cust-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cust-row .bubble{flex:1 1 260px;min-height:110px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.order-pic{font-size:clamp(40px,6vw,58px);letter-spacing:2px}
+.num{display:inline-grid;place-items:center;min-width:64px;height:64px;padding:0 10px;border-radius:18px;background:var(--yel);color:var(--ink);font-size:44px;font-weight:700;box-shadow:0 4px 0 var(--yel-d)}
+.kas{background:#fff7d6;border-radius:22px;padding:10px 16px;font-size:26px;font-weight:700;box-shadow:0 5px 0 #f0d98a;display:flex;align-items:center;gap:8px}
+.lapak-title{font-size:22px;font-weight:700;margin:18px 0 10px}
+.lapak{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;background:#f7e2c4;border-radius:28px;padding:14px;border-top:14px solid #e8b57a}
+#rak{grid-template-columns:repeat(auto-fit,minmax(max(120px,calc((100% - 42px) / 4)),1fr))}
+.item{background:#fff;border-radius:22px;box-shadow:0 6px 0 var(--line);min-height:128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:58px;transition:transform .1s,opacity .3s}
+.item span{font-size:19px;font-weight:600}
+.item:active{transform:scale(.94)}
+.item.used{opacity:.3;pointer-events:none}
+.bag-row{display:flex;gap:14px;align-items:stretch;margin-top:18px;flex-wrap:wrap}
+.bag{flex:1 1 260px;min-height:110px;background:#fff;border:4px dashed #e3c9a5;border-radius:26px;padding:10px 14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.bag-empty{color:var(--muted);font-size:20px}
+.bag-g{position:relative;background:#fff8ee;border-radius:18px;padding:6px 10px;font-size:42px;line-height:1.1;letter-spacing:1px;box-shadow:0 4px 0 var(--line)}
+.bag-g b{position:absolute;top:-12px;right:-10px;background:var(--blu);color:#fff;font-size:20px;min-width:34px;height:34px;border-radius:50%;display:grid;place-items:center;box-shadow:0 3px 0 var(--blu-d)}
+.hint-s{color:var(--muted);font-size:17px;margin-top:8px}
+.kitchen{display:grid;grid-template-columns:minmax(220px,1fr) minmax(200px,1fr);gap:16px;margin-top:16px}
+@media (max-width:600px){.kitchen{grid-template-columns:1fr}}
+.resep{background:#fffdf5;border-radius:24px;padding:14px 18px;box-shadow:0 6px 0 var(--line);border:3px solid #f1e3c4}
+.resep-h{font-size:20px;color:var(--muted);font-weight:600}
+.resep-name{font-size:28px;font-weight:700;margin:2px 0 8px}
+.resep-list{display:flex;gap:10px;flex-wrap:wrap}
+.ri{position:relative;background:#fff;border-radius:16px;padding:6px 10px;font-size:42px;box-shadow:0 4px 0 var(--line);opacity:.55}
+.ri.done{opacity:1;background:#d9f5df}
+.ri.done::after{content:"✔";position:absolute;right:-8px;top:-10px;background:var(--grn);color:#fff;font-size:16px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center}
+.ri i{position:absolute;left:-8px;top:-10px;font-style:normal;background:var(--pur);color:#fff;font-size:15px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+.pot-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.pot{width:min(260px,70vw);height:150px;background:linear-gradient(#8f9bb0,#6b778c);border-radius:20px 20px 90px 90px;position:relative;box-shadow:0 8px 0 #4f596b;display:flex;align-items:flex-start;justify-content:center;padding-top:16px}
+.pot::before,.pot::after{content:"";position:absolute;top:30px;width:34px;height:18px;background:#6b778c;border-radius:10px}
+.pot::before{left:-26px}.pot::after{right:-26px}
+.pot-in{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;font-size:34px;max-width:80%}
+.pot.big .pot-in{font-size:80px}
+.pot.stir{animation:wob .3s}
+@keyframes wob{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+.pot-label{font-size:20px;font-weight:600;color:var(--muted)}
+.aduk-row{display:flex;justify-content:center;margin-top:16px}
+.aduk-row .btn{min-height:96px;font-size:34px;padding:12px 40px}
+/* Kartu */
+.ask-row{display:flex;align-items:center;gap:14px}
+.ask-row .bubble{flex:1;min-height:100px;display:flex;flex-direction:column;justify-content:center}
+.letter{font-size:clamp(60px,10vw,96px);font-weight:700;color:var(--pri);line-height:1}
+.clues{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.clue{font-size:clamp(19px,2.4vw,24px);font-weight:500;background:#fff7e6;border-radius:14px;padding:6px 12px}
+.clue-btn{margin-top:12px}
+.cards{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:16px;margin:20px auto 0;max-width:calc(var(--n) * 240px)}
+@media (max-width:640px){.cards.n4{grid-template-columns:repeat(2,minmax(0,1fr))}.cards.n3{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}}
+.kartu{perspective:900px;aspect-ratio:3/4;width:100%}
+.k-in{position:relative;width:100%;height:100%;transition:transform .55s cubic-bezier(.3,1.4,.5,1);transform-style:preserve-3d;transition-delay:var(--d,0ms)}
+.kartu.flipped .k-in{transform:rotateY(180deg)}
+.k-front,.k-back{position:absolute;inset:0;border-radius:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.k-front{background:#fff;box-shadow:0 8px 0 var(--line);border:5px solid #fff;transition:background .3s,border-color .3s}
+.k-back{background:repeating-linear-gradient(45deg,var(--blu) 0 16px,#6fa3fa 16px 32px);transform:rotateY(180deg);color:#fff;font-size:64px;box-shadow:0 8px 0 var(--blu-d)}
+.k-e{font-size:clamp(54px,11vw,112px);line-height:1}
+.k-n{font-size:clamp(18px,2.4vw,26px);font-weight:700}
+.k-n b{color:var(--pri);font-size:1.25em}
+.kartu.win .k-front{border-color:var(--grn);background:#e3f8e7;animation:bob .6s ease-in-out 2}
+.kartu.no{pointer-events:none}
+.kartu.no .k-front{opacity:.4;filter:grayscale(1)}
+/* Overlay, result, misc */
+.fb{position:fixed;inset:0;background:rgba(61,44,41,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.fb-card{background:#fff;border-radius:34px;padding:26px 30px;text-align:center;max-width:560px;width:100%;box-shadow:0 10px 0 rgba(0,0,0,.15);border-top:14px solid var(--c,var(--grn))}
+.fb-e{font-size:clamp(100px,18vw,150px);line-height:1.1}
+.fb-t{font-size:clamp(24px,3.4vw,34px);font-weight:700;margin-top:6px}
+.fb-s{font-size:clamp(18px,2.4vw,23px);color:var(--muted);margin-top:6px}
+.fb-n{font-size:72px;font-weight:700;color:var(--pri);min-height:84px}
+.result{text-align:center;padding-top:10px}
+.res-stars{font-size:clamp(80px,14vw,120px);letter-spacing:6px;line-height:1.1}
+.rs{color:#e8d8c2;display:inline-block}
+.rs.on{color:var(--yel);animation:starIn .6s cubic-bezier(.34,1.56,.64,1) both;text-shadow:0 5px 0 var(--yel-d)}
+@keyframes starIn{from{transform:scale(0) rotate(-120deg)}}
+.res-t{font-size:clamp(26px,3.6vw,38px);font-weight:700;margin-top:10px}
+.res-s{font-size:22px;color:var(--muted);margin-top:4px}
+.res-stk{margin:22px auto 0;background:#fff;display:inline-flex;align-items:center;gap:14px;border-radius:26px;padding:12px 24px;box-shadow:0 6px 0 var(--line);font-size:24px;font-weight:600}
+.stk-big{font-size:64px}
+.res-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.stickers{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:14px}
+.stk{background:#fff;border-radius:24px;aspect-ratio:1;display:grid;place-items:center;font-size:62px;box-shadow:0 6px 0 var(--line)}
+.stk.lock{background:#f3e9da;font-size:34px;color:#c9b59b}
+.panel{background:#fff;border-radius:26px;padding:18px 20px;box-shadow:0 6px 0 var(--line);margin-bottom:16px}
+.panel h3{margin:0 0 10px;font-size:23px}
+.panel p,.panel li{font-size:18px;line-height:1.5}
+.set{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:2px dashed var(--line);font-size:20px;flex-wrap:wrap}
+.set:last-child{border-bottom:0}
+.tog{min-width:120px;min-height:52px;border-radius:999px;font-weight:700;font-size:19px;background:#eee;color:#888;box-shadow:0 4px 0 #ddd}
+.tog.on{background:var(--grn);color:#fff;box-shadow:0 4px 0 var(--grn-d)}
+.gate{text-align:center;max-width:420px;margin:0 auto}
+.gate p{font-size:26px}
+.gate-in{font-size:46px;font-weight:700;min-height:70px;background:#fff;border-radius:20px;box-shadow:0 5px 0 var(--line);display:grid;place-items:center;margin-bottom:16px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.keypad button{background:#fff;border-radius:18px;min-height:68px;font-size:30px;font-weight:700;box-shadow:0 5px 0 var(--line)}
+.fly{position:fixed;z-index:60;font-size:58px;margin:-34px 0 0 -34px;pointer-events:none;transition:transform .45s cubic-bezier(.5,0,.7,1),opacity .45s}
+.coin{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe680,#f5b800);color:#8a6200;font-size:15px;font-weight:700;box-shadow:0 3px 0 #c99400;animation:pop .35s cubic-bezier(.34,1.56,.64,1) both}
+.conf{position:fixed;top:-24px;width:12px;height:18px;border-radius:3px;z-index:70;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(760deg)}}
+.pop{animation:pop .45s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.slide{animation:slide .5s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes slide{from{transform:translateX(-120px);opacity:0}}
+.shake{animation:shake .45s}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.bob{animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-14px) scale(1.05)}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .timer>i{animation-duration:var(--d,6s)!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="live" class="sr" aria-live="polite"></div>
+<script>
+/* =====================================================================
+   KONTEN (guru boleh mengganti bagian ini)
+   ===================================================================== */
+
+// 1) IBU BERKATA: daftar gerakan. e = gambar (emoji), l = label tombol, t = kalimat perintah
+const GERAK = [
+  { e: '🙌', l: 'Angkat tangan', t: 'angkat kedua tangan' },
+  { e: '👏', l: 'Tepuk tangan', t: 'tepuk tangan tiga kali' },
+  { e: '🦘', l: 'Lompat', t: 'lompat di tempat' },
+  { e: '👃', l: 'Pegang hidung', t: 'pegang hidungmu' },
+  { e: '👂', l: 'Pegang telinga', t: 'pegang telingamu' },
+  { e: '🙈', l: 'Tutup mata', t: 'tutup matamu' },
+  { e: '🔄', l: 'Putar badan', t: 'putar badanmu' },
+  { e: '👋', l: 'Melambai', t: 'lambaikan tanganmu' },
+  { e: '🦵', l: 'Angkat kaki', t: 'angkat satu kaki' },
+  { e: '🧎', l: 'Jongkok', t: 'jongkok' },
+  { e: '😁', l: 'Senyum lebar', t: 'senyum yang lebar' },
+  { e: '🦆', l: 'Jalan bebek', t: 'jalan seperti bebek' },
+  { e: '🐸', l: 'Lompat katak', t: 'lompat seperti katak' },
+  { e: '✈️', l: 'Jadi pesawat', t: 'rentangkan tangan seperti pesawat' },
+  { e: '🙆', l: 'Sentuh kepala', t: 'sentuh kepalamu' },
+  { e: '🤗', l: 'Peluk diri', t: 'peluk dirimu sendiri' }
+];
+const SIMON_LV = {
+  mudah:  { opsi: 2, trik: 0.25, waktu: 9, bapak: false, gambar: true },
+  sedang: { opsi: 3, trik: 0.35, waktu: 7, bapak: false, gambar: false },
+  seru:   { opsi: 4, trik: 0.45, waktu: 5, bapak: true,  gambar: false }
+};
+
+// 2) PASAR: barang dagangan
+const BARANG = [
+  { id: 'apel', e: '🍎', n: 'apel' }, { id: 'tomat', e: '🍅', n: 'tomat' },
+  { id: 'pisang', e: '🍌', n: 'pisang' }, { id: 'wortel', e: '🥕', n: 'wortel' },
+  { id: 'telur', e: '🥚', n: 'telur' }, { id: 'jagung', e: '🌽', n: 'jagung' },
+  { id: 'jeruk', e: '🍊', n: 'jeruk' }, { id: 'terong', e: '🍆', n: 'terong' },
+  { id: 'roti', e: '🍞', n: 'roti' }, { id: 'ikan', e: '🐟', n: 'ikan' }
+];
+const PEMBELI = ['👵', '👴', '👩', '👨', '🧕', '👧', '👦', '🧑'];
+const PASAR_LV = {
+  mudah:  { jenis: 1, min: 1, max: 3, gambar: true },
+  sedang: { jenis: 1, min: 2, max: 6, gambar: false },
+  seru:   { jenis: 2, min: 1, max: 5, gambar: false }
+};
+
+// 3) KOKI: bahan dan resep
+const BAHAN = {
+  apel: ['🍎', 'apel'], pisang: ['🍌', 'pisang'], anggur: ['🍇', 'anggur'], stroberi: ['🍓', 'stroberi'],
+  jeruk: ['🍊', 'jeruk'], madu: ['🍯', 'madu'], es: ['🧊', 'es batu'], nasi: ['🍚', 'nasi'],
+  telur: ['🥚', 'telur'], bawang: ['🧅', 'bawang'], cabai: ['🌶️', 'cabai'], wortel: ['🥕', 'wortel'],
+  kentang: ['🥔', 'kentang'], brokoli: ['🥦', 'brokoli'], roti: ['🍞', 'roti'], keju: ['🧀', 'keju'],
+  timun: ['🥒', 'timun'], tomat: ['🍅', 'tomat'], garam: ['🧂', 'garam'], susu: ['🥛', 'susu'],
+  ikan: ['🐟', 'ikan'], jagung: ['🌽', 'jagung']
+};
+const RESEP = [
+  { nama: 'Salad Buah', e: '🥗', bahan: ['apel', 'pisang', 'anggur', 'stroberi'] },
+  { nama: 'Jus Jeruk', e: '🧃', bahan: ['jeruk', 'madu', 'es'] },
+  { nama: 'Nasi Goreng', e: '🍛', bahan: ['nasi', 'bawang', 'telur', 'cabai'] },
+  { nama: 'Sup Sayur', e: '🍲', bahan: ['wortel', 'kentang', 'brokoli', 'bawang'] },
+  { nama: 'Roti Isi', e: '🥪', bahan: ['roti', 'keju', 'timun', 'tomat'] },
+  { nama: 'Telur Dadar', e: '🍳', bahan: ['telur', 'bawang', 'garam'] },
+  { nama: 'Susu Pisang', e: '🥤', bahan: ['susu', 'pisang', 'madu'] }
+];
+const KOKI_LV = {
+  mudah:  { rak: 6, aduk: 3, urut: false },
+  sedang: { rak: 8, aduk: 5, urut: false },
+  seru:   { rak: 8, aduk: 7, urut: true }
+};
+
+// 4) TEBAK KARTU: kartu bergambar. p = 3 petunjuk untuk mode "Siapa Aku?"
+const KARTU = [
+  { n: 'Kucing', e: '🐱', k: 'hewan', p: ['Aku punya kumis dan bulu yang lembut.', 'Aku suka makan ikan.', 'Aku berbunyi meong, meong.'] },
+  { n: 'Anjing', e: '🐶', k: 'hewan', p: ['Aku suka menjaga rumah.', 'Aku suka menggoyangkan ekorku.', 'Aku berbunyi guk, guk.'] },
+  { n: 'Sapi', e: '🐮', k: 'hewan', p: ['Badanku besar dan aku suka makan rumput.', 'Aku menghasilkan susu.', 'Aku berbunyi mooo.'] },
+  { n: 'Ayam', e: '🐔', k: 'hewan', p: ['Aku punya sayap dan jengger merah.', 'Aku bertelur.', 'Aku berbunyi kukuruyuk.'] },
+  { n: 'Bebek', e: '🦆', k: 'hewan', p: ['Aku suka berenang di kolam.', 'Paruhku pipih dan kakiku berselaput.', 'Aku berbunyi kwek, kwek.'] },
+  { n: 'Ikan', e: '🐟', k: 'hewan', p: ['Aku tinggal di dalam air.', 'Aku berenang dengan sirip.', 'Aku bernapas dengan insang.'] },
+  { n: 'Gajah', e: '🐘', k: 'hewan', p: ['Badanku sangat besar.', 'Telingaku lebar seperti kipas.', 'Hidungku panjang, namanya belalai.'] },
+  { n: 'Kelinci', e: '🐰', k: 'hewan', p: ['Bulu badanku lembut.', 'Aku suka melompat.', 'Telingaku panjang dan aku suka wortel.'] },
+  { n: 'Kupu-kupu', e: '🦋', k: 'hewan', p: ['Sayapku berwarna-warni.', 'Aku suka hinggap di bunga.', 'Dulu aku adalah ulat.'] },
+  { n: 'Katak', e: '🐸', k: 'hewan', p: ['Kulitku licin dan berwarna hijau.', 'Aku pandai melompat.', 'Aku berbunyi kwok, kwok.'] },
+  { n: 'Monyet', e: '🐵', k: 'hewan', p: ['Aku pandai memanjat pohon.', 'Ekorku panjang.', 'Aku suka makan pisang.'] },
+  { n: 'Jerapah', e: '🦒', k: 'hewan', p: ['Badanku berbintik cokelat.', 'Aku makan daun di pohon yang tinggi.', 'Leherku sangat panjang.'] },
+  { n: 'Apel', e: '🍎', k: 'buah', p: ['Aku buah yang bulat.', 'Kulitku bisa merah atau hijau.', 'Aku renyah saat digigit, kraus!'] },
+  { n: 'Pisang', e: '🍌', k: 'buah', p: ['Kulitku kuning.', 'Bentukku panjang dan melengkung.', 'Monyet suka sekali padaku.'] },
+  { n: 'Jeruk', e: '🍊', k: 'buah', p: ['Aku bulat dan berwarna oranye.', 'Rasaku manis dan segar.', 'Aku sering dibuat jus.'] },
+  { n: 'Semangka', e: '🍉', k: 'buah', p: ['Kulitku hijau bergaris.', 'Isiku merah dan banyak airnya.', 'Bijiku kecil dan hitam.'] },
+  { n: 'Anggur', e: '🍇', k: 'buah', p: ['Aku kecil dan bulat.', 'Aku tumbuh bergerombol.', 'Warnaku ungu atau hijau.'] },
+  { n: 'Wortel', e: '🥕', k: 'buah', p: ['Aku sayur berwarna oranye.', 'Aku tumbuh di dalam tanah.', 'Kelinci suka sekali padaku.'] },
+  { n: 'Jagung', e: '🌽', k: 'buah', p: ['Aku berwarna kuning.', 'Bijiku banyak dan berderet rapi.', 'Aku enak dibakar atau direbus.'] },
+  { n: 'Tomat', e: '🍅', k: 'buah', p: ['Aku bulat dan merah.', 'Rasaku segar dan sedikit asam.', 'Aku sering dibuat saus.'] },
+  { n: 'Mobil', e: '🚗', k: 'kendaraan', p: ['Aku punya empat roda.', 'Aku berjalan di jalan raya.', 'Aku membawa keluarga jalan-jalan.'] },
+  { n: 'Bus', e: '🚌', k: 'kendaraan', p: ['Badanku besar dan panjang.', 'Aku membawa banyak penumpang.', 'Aku berhenti di halte.'] },
+  { n: 'Kereta', e: '🚆', k: 'kendaraan', p: ['Badanku sangat panjang.', 'Aku berjalan di atas rel.', 'Aku berhenti di stasiun.'] },
+  { n: 'Pesawat', e: '✈️', k: 'kendaraan', p: ['Aku punya sayap, tapi aku bukan burung.', 'Aku terbang tinggi di langit.', 'Aku berangkat dari bandara.'] },
+  { n: 'Kapal', e: '🚢', k: 'kendaraan', p: ['Badanku besar.', 'Aku berlayar di laut.', 'Aku berlabuh di pelabuhan.'] },
+  { n: 'Sepeda', e: '🚲', k: 'kendaraan', p: ['Aku punya dua roda.', 'Aku dikayuh dengan kaki.', 'Aku tidak perlu bensin.'] },
+  { n: 'Motor', e: '🏍️', k: 'kendaraan', p: ['Aku punya dua roda dan mesin.', 'Pengendaraku harus memakai helm.', 'Aku berbunyi brum, brum.'] },
+  { n: 'Bola', e: '⚽', k: 'benda', p: ['Bentukku bulat.', 'Aku bisa ditendang dan dilempar.', 'Aku dipakai bermain sepak bola.'] },
+  { n: 'Buku', e: '📚', k: 'benda', p: ['Aku punya banyak halaman.', 'Di dalamku ada tulisan dan gambar.', 'Aku dibaca supaya pintar.'] },
+  { n: 'Payung', e: '☂️', k: 'benda', p: ['Aku bisa dibuka dan dilipat.', 'Aku dipakai saat hujan.', 'Aku menjagamu supaya tidak basah.'] },
+  { n: 'Jam', e: '⏰', k: 'benda', p: ['Aku punya jarum dan angka.', 'Aku memberi tahu waktu.', 'Aku bisa berbunyi untuk membangunkanmu.'] },
+  { n: 'Gunting', e: '✂️', k: 'benda', p: ['Aku punya dua bilah yang tajam.', 'Aku dipakai untuk memotong kertas.', 'Hati-hati saat memakaiku ya.'] },
+  { n: 'Lampu', e: '💡', k: 'benda', p: ['Aku bisa menyala.', 'Aku membuat ruangan jadi terang.', 'Aku dinyalakan saat malam.'] },
+  { n: 'Tas', e: '🎒', k: 'benda', p: ['Aku punya tali untuk digendong.', 'Aku membawa buku dan pensil.', 'Aku menemanimu ke sekolah.'] }
+];
+const KATEGORI = {
+  semua: { n: 'Semua', e: '🌈' }, hewan: { n: 'Hewan', e: '🐾' }, buah: { n: 'Buah & Sayur', e: '🍎' },
+  kendaraan: { n: 'Kendaraan', e: '🚗' }, benda: { n: 'Benda', e: '🎒' }
+};
+
+// Stiker hadiah
+const STIKER = ['🦄', '🐼', '🦁', '🐯', '🐨', '🐙', '🦕', '🐳', '🌈', '🚀', '🌻', '🍭', '🎈', '🏆', '🦉', '🐞', '🌟', '🍩', '🎨', '🧸', '🐬', '🦋', '🍦', '⛵'];
+
+/* =====================================================================
+   MESIN (tidak perlu diubah)
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const app = $('#app');
+const LV = {
+  mudah: { nama: 'Mudah', e: '🐣', c: 'var(--grn)', cd: 'var(--grn-d)' },
+  sedang: { nama: 'Sedang', e: '🐥', c: 'var(--blu)', cd: 'var(--blu-d)' },
+  seru: { nama: 'Seru', e: '🦅', c: 'var(--pri)', cd: 'var(--pri-d)' }
+};
+const ANGKA = ['nol', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh'];
+const rand = n => Math.floor(Math.random() * n);
+const pick = a => a[rand(a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const low = s => s.toLowerCase();
+
+const Store = {
+  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const SAVE_KEY = 'main-yuk-v1';
+const save = Object.assign({ v: 1, best: {}, totalStars: 0, stickers: [], sfx: true, tts: true, rate: 0.9, santai: false }, Store.get(SAVE_KEY, {}));
+const persist = () => Store.set(SAVE_KEY, save);
+
+// Timer yang dibersihkan saat pindah layar
+let timers = [];
+const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+const Pause = { hook: null };
+
+// Suara efek (WebAudio, tanpa file)
+const Sfx = {
+  ac: null,
+  unlock() { if (!this.ac) { try { this.ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (this.ac && this.ac.state === 'suspended') this.ac.resume().catch(() => {}); },
+  tone(f = 440, d = 0.12, type = 'sine', v = 0.14, delay = 0) {
+    if (!this.ac || !save.sfx) return;
+    try {
+      const t0 = this.ac.currentTime + delay, o = this.ac.createOscillator(), g = this.ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t0);
+      g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + d);
+      o.connect(g).connect(this.ac.destination); o.start(t0); o.stop(t0 + d + 0.02);
+    } catch (e) {}
+  },
+  click() { this.tone(560, 0.06, 'triangle', 0.1); },
+  pop() { this.tone(700, 0.07, 'sine', 0.12); this.tone(1050, 0.06, 'sine', 0.08, 0.04); },
+  ok() { this.tone(660, 0.1); this.tone(880, 0.18, 'sine', 0.14, 0.09); },
+  bad() { this.tone(260, 0.18, 'triangle', 0.12); this.tone(200, 0.22, 'triangle', 0.1, 0.12); },
+  coin() { this.tone(988, 0.06, 'square', 0.05); this.tone(1319, 0.14, 'square', 0.05, 0.06); },
+  stir(n) { this.tone(400 + n * 60, 0.1, 'triangle', 0.1); },
+  win() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, 0.2, 'triangle', 0.12, i * 0.11)); }
+};
+document.addEventListener('pointerdown', () => Sfx.unlock(), { capture: true });
+
+// Suara pembaca Bahasa Indonesia (Web Speech API)
+const Voice = {
+  v: null, ok: 'speechSynthesis' in window,
+  init() {
+    if (!this.ok) return;
+    const choose = () => { const vs = speechSynthesis.getVoices(); this.v = vs.find(v => /^id([-_]|$)/i.test(v.lang)) || vs.find(v => /indones/i.test(v.name)) || null; };
+    choose(); try { speechSynthesis.addEventListener('voiceschanged', choose); } catch (e) { speechSynthesis.onvoiceschanged = choose; }
+  },
+  say(text, onend) {
+    $('#live').textContent = text;
+    let done = false; const fin = () => { if (!done) { done = true; onend && onend(); } };
+    if (!save.tts || !this.ok) { if (onend) later(fin, 400); return; }
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'id-ID'; if (this.v) u.voice = this.v; u.rate = save.rate; u.pitch = 1.1;
+      u.onend = fin; u.onerror = fin;
+      speechSynthesis.speak(u);
+      if (onend) later(fin, 1200 + text.length * 85 / save.rate);
+    } catch (e) { if (onend) later(fin, 400); }
+  },
+  stop() { try { this.ok && speechSynthesis.cancel(); } catch (e) {} }
+};
+Voice.init();
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) { Voice.stop(); Pause.hook && Pause.hook(); } });
+
+// Efek visual
+function confetti(n = 50) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cols = ['#ff7a59', '#ffc93c', '#4cc265', '#4f8ef7', '#9b6bdf', '#2bb3a3', '#f472b6'];
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div'); d.className = 'conf';
+    d.style.left = Math.random() * 100 + 'vw'; d.style.background = pick(cols);
+    d.style.animationDuration = (1.6 + Math.random() * 1.2) + 's'; d.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 3400);
+  }
+}
+function fly(emoji, fromEl, toEl) {
+  if (!fromEl || !toEl) return;
+  const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect();
+  const d = document.createElement('div'); d.className = 'fly'; d.textContent = emoji;
+  d.style.left = (a.left + a.width / 2) + 'px'; d.style.top = (a.top + a.height / 2) + 'px';
+  document.body.appendChild(d); d.offsetWidth;
+  d.style.transform = `translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px,${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(.55)`;
+  d.style.opacity = '.3';
+  setTimeout(() => d.remove(), 500);
+}
+function restart(el, cls) { if (!el) return; el.classList.remove(cls); el.offsetWidth; el.classList.add(cls); }
+
+function overlay({ emoji, text, sub = '', color = 'var(--grn)', ms = 2200, count = 0, then }) {
+  const o = document.createElement('div'); o.className = 'fb';
+  o.innerHTML = `<div class="fb-card pop" style="--c:${color}"><div class="fb-e ${count ? 'bob' : ''}">${emoji}</div><div class="fb-t">${text}</div>${count ? '<div class="fb-n"></div>' : ''}${sub ? `<div class="fb-s">${sub}</div>` : ''}</div>`;
+  document.body.appendChild(o);
+  let done = false; const t0 = Date.now();
+  const end = () => { if (done) return; done = true; o.remove(); then && then(); };
+  if (count) { const el = $('.fb-n', o); for (let k = 0; k <= count; k++) later(() => { el.textContent = k < count ? (count - k) : '🎉'; if (k < count) Sfx.tone(520 + k * 80, 0.08, 'triangle', 0.08); }, 600 + k * 900); }
+  later(end, ms);
+  o.addEventListener('pointerdown', () => { if (Date.now() - t0 > 900) end(); });
+}
+function pauseOverlay(resume) {
+  $$('.fb').forEach(x => x.remove());
+  const o = document.createElement('div'); o.className = 'fb';
+  o.innerHTML = `<div class="fb-card pop" style="--c:var(--blu)"><div class="fb-e">⏸️</div><div class="fb-t">Istirahat sebentar</div><div style="margin-top:18px"><button class="btn" style="--c:var(--grn);--cd:var(--grn-d)">▶️ Lanjut main</button></div></div>`;
+  document.body.appendChild(o);
+  $('button', o).onclick = () => { Sfx.click(); o.remove(); resume(); };
+}
+
+// Navigasi
+function go(fn, ...args) {
+  timers.forEach(clearTimeout); timers = []; Voice.stop(); Pause.hook = null;
+  $$('.fb').forEach(x => x.remove());
+  fn(...args); window.scrollTo(0, 0);
+}
+function shell(title, body, back = Home) {
+  app.innerHTML = `<header class="top">
+    <button class="icon-btn" id="btnBack" aria-label="Kembali">⬅️</button>
+    <h1>${title}</h1>
+    <span class="pill" aria-label="Jumlah bintang">⭐ ${save.totalStars}</span>
+  </header><main>${body}</main>`;
+  $('#btnBack').onclick = () => { Sfx.click(); go(back); };
+}
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+const dotsHTML = n => `<div class="dots" id="dots">${'<i></i>'.repeat(n)}</div>`;
+function markDot(i, ok) { const d = $$('#dots i'); if (d[i]) { d[i].classList.remove('now'); d[i].classList.add(ok ? 'ok' : 'no'); } if (d[i + 1]) d[i + 1].classList.add('now'); }
+function levelBtns() { return Object.entries(LV).map(([k, v], i) => `<button class="btn pop" data-lv="${k}" style="--c:${v.c};--cd:${v.cd};animation-delay:${i * 90}ms">${v.e} ${v.nama}</button>`).join(''); }
+function bindLevels(fn) { $$('[data-lv]').forEach(b => b.onclick = () => { Sfx.click(); fn(b.dataset.lv); }); }
+
+/* ===================== BERANDA ===================== */
+function Home() {
+  app.innerHTML = `<header class="top">
+    <span class="pill" aria-label="Jumlah bintang">⭐ ${save.totalStars}</span>
+    <h1 class="logo">Main <span>Yuk!</span></h1>
+    <button class="icon-btn" id="btnGuru" aria-label="Panel guru dan orang tua">⚙️</button>
+  </header>
+  <main>
+    <p class="hello pop">☀️ Halo! Mau main apa hari ini?</p>
+    <div class="tiles">
+      <button class="tile pop" id="tSimon" style="--c:var(--teal);--cd:var(--teal-d)">
+        <div class="te">🙋</div><div class="tt">Ibu Berkata</div><div class="ts">Permainan gerak: dengarkan baik-baik, lalu bergerak atau diam!</div>
+        <div class="tstar">${starStr(save.best.simon || 0)}</div></button>
+      <button class="tile pop" id="tPeran" style="--c:var(--pri);--cd:var(--pri-d);animation-delay:90ms">
+        <div class="te">👩‍🍳</div><div class="tt">Koki & Pasar</div><div class="ts">Bermain peran: jadi penjual sayur atau koki hebat!</div>
+        <div class="tstar">${starStr(Math.max(save.best.pasar || 0, save.best.koki || 0))}</div></button>
+      <button class="tile pop" id="tKartu" style="--c:var(--pur);--cd:var(--pur-d);animation-delay:180ms">
+        <div class="te">🃏</div><div class="tt">Tebak Kartu</div><div class="ts">Kartu bergambar: dengar, tebak, dan kenali hurufnya!</div>
+        <div class="tstar">${starStr(save.best.kartu || 0)}</div></button>
+    </div>
+    <div class="home-foot">
+      <button class="btn" id="btnStk" style="--c:var(--yel);--cd:var(--yel-d);color:var(--ink)">🎁 Koleksi Stiker (${save.stickers.length}/${STIKER.length})</button>
+    </div>
+  </main>`;
+  $('#tSimon').onclick = () => { Sfx.click(); go(SimonMenu); };
+  $('#tPeran').onclick = () => { Sfx.click(); go(PeranMenu); };
+  $('#tKartu').onclick = () => { Sfx.click(); go(KartuMenu); };
+  $('#btnStk').onclick = () => { Sfx.click(); go(Stiker); };
+  $('#btnGuru').onclick = () => { Sfx.click(); go(Gate); };
+}
+
+/* ===================== IBU BERKATA ===================== */
+function SimonMenu() {
+  shell('Ibu Berkata', `
+    <div class="intro pop"><div class="intro-e">👩‍🏫</div><div>Kalau ada kata <b>"Ibu berkata"</b>, ayo bergerak dan pilih gambarnya! Kalau <b>tidak ada</b>, diam seperti patung 🧍.</div></div>
+    <h2 class="sub">🙋 Main sendiri</h2>
+    <div class="levels">${levelBtns()}</div>
+    <h2 class="sub">📺 Main bersama di kelas</h2>
+    <div class="intro" style="font-size:19px"><div class="intro-e" style="font-size:44px">👨‍👩‍👧‍👦</div><div>Tampilkan di layar besar. Aplikasi membacakan perintah, semua anak bergerak bersama. Tidak perlu mengetuk layar.</div></div>
+    <div class="levels" style="margin-top:14px"><button class="btn" id="kelas" style="--c:var(--pur);--cd:var(--pur-d)">📺 Mode Kelas</button></div>`);
+  Voice.say('Ibu berkata! Kalau ada kata Ibu berkata, ayo bergerak. Kalau tidak ada, diam seperti patung.');
+  bindLevels(lv => go(SimonPlay, lv));
+  $('#kelas').onclick = () => { Sfx.click(); go(SimonKelasSetup); };
+}
+
+function simonQuestion(P) {
+  const g = pick(GERAK);
+  const ibu = Math.random() >= P.trik;
+  let prefix = '';
+  if (ibu) prefix = 'Ibu berkata'; else if (P.bapak && Math.random() < 0.5) prefix = 'Bapak berkata';
+  const others = shuffle(GERAK.filter(x => x !== g)).slice(0, Math.max(0, P.opsi - 1));
+  const say = prefix ? `${prefix}: ${g.t}!` : `${cap(g.t)}!`;
+  return { g, ibu, prefix, opts: shuffle([g, ...others]), say };
+}
+
+function SimonPlay(lv) {
+  const P = SIMON_LV[lv], N = 10;
+  const S = { i: 0, ok: 0, state: 'idle', q: null, tid: 0 };
+  shell('Ibu Berkata', `${dotsHTML(N)}
+    <div class="stage">
+      <div class="speaker">👩‍🏫</div>
+      <div class="bubble" id="bub"><div class="cue" id="cue"></div><div class="cmd" id="cmd"></div><div class="cmd-e" id="cmdE"></div></div>
+      <button class="icon-btn" id="rep" aria-label="Dengar lagi">🔊</button>
+    </div>
+    <div class="timer" id="tmr" ${save.santai ? 'style="visibility:hidden"' : ''}><i></i></div>
+    <div class="opts" id="opts"></div>`, SimonMenu);
+  $$('#dots i')[0].classList.add('now');
+  $('#rep').onclick = () => { if (S.q) Voice.say(S.q.say); };
+  Pause.hook = () => { if (S.state === 'ask') { clearTimeout(S.tid); S.state = 'paused'; pauseOverlay(ask); } };
+
+  function next() { if (S.i >= N) return Result({ game: 'simon', ok: S.ok, total: N, again: () => go(SimonPlay, lv), back: SimonMenu }); S.q = simonQuestion(P); ask(); }
+  function ask() {
+    const q = S.q; S.state = 'ask';
+    const cue = $('#cue');
+    cue.textContent = q.prefix || '(tidak ada "Ibu berkata")';
+    cue.className = 'cue ' + (q.ibu ? 'on' : q.prefix ? 'fake' : 'none');
+    $('#cmd').textContent = cap(q.g.t) + '!';
+    $('#cmdE').textContent = P.gambar ? q.g.e : '';
+    restart($('#bub'), 'pop');
+    $('#opts').innerHTML = q.opts.map((g, k) => `<button class="opt pop" data-k="${k}" style="animation-delay:${k * 60}ms">${g.e}<span>${g.l}</span></button>`).join('')
+      + `<button class="opt diam pop" data-k="diam" style="animation-delay:${q.opts.length * 60}ms">🧍<span>Diam</span></button>`;
+    $$('#opts .opt').forEach(b => b.onclick = () => answer(b.dataset.k === 'diam' ? 'diam' : q.opts[+b.dataset.k], b));
+    const bar = $('#tmr i'); bar.style.animation = 'none'; bar.style.transform = 'scaleX(1)';
+    Voice.say(q.say, () => {
+      if (S.state !== 'ask' || save.santai) return;
+      bar.style.setProperty('--d', P.waktu + 's'); bar.offsetWidth;
+      bar.style.animation = `drain ${P.waktu}s linear forwards`;
+      S.tid = later(() => answer(null, null, true), P.waktu * 1000);
+    });
+  }
+  function answer(choice, btn, timeout) {
+    if (S.state !== 'ask') return;
+    S.state = 'fb'; clearTimeout(S.tid);
+    const bar = $('#tmr i'); bar.style.animationPlayState = 'paused';
+    const q = S.q, who = q.prefix ? q.prefix.split(' ')[0] : '';
+    const diamOk = who ? `Pintar! Itu ${who}, bukan Ibu. Kamu tetap diam.` : 'Pintar! Ibu tidak berkata, jadi kamu diam.';
+    let ok, msg;
+    if (timeout) { if (!q.ibu) { ok = true; msg = diamOk; } else { ok = false; msg = `Waktunya habis. Ibu berkata, ${q.g.t}.`; } }
+    else if (choice === 'diam') { if (!q.ibu) { ok = true; msg = diamOk; } else { ok = false; msg = `Ibu berkata, jadi kita bergerak! Ayo ${q.g.t}.`; } }
+    else if (!q.ibu) { ok = false; msg = who ? `Ups! Itu ${who}, bukan Ibu. Harus diam ya.` : 'Ups! Ibu tidak berkata. Harus diam ya.'; }
+    else if (choice === q.g) { ok = true; msg = `Hebat! Ayo ${q.g.t}!`; }
+    else { ok = false; msg = `Hampir! Ibu minta ${q.g.t}.`; }
+    // tandai tombol
+    const goodK = q.ibu ? String(q.opts.indexOf(q.g)) : 'diam';
+    const goodBtn = $(`#opts [data-k="${goodK}"]`); goodBtn && goodBtn.classList.add('good');
+    if (!ok && btn) { btn.classList.add('bad'); restart(btn, 'shake'); }
+    if (ok) { S.ok++; Sfx.ok(); } else Sfx.bad();
+    markDot(S.i, ok);
+    const cont = () => { S.i++; next(); };
+    later(() => {
+      Voice.say(msg);
+      if (q.ibu) overlay({ emoji: q.g.e, text: ok ? 'Hebat! Ayo lakukan!' : 'Ayo kita lakukan bersama!', sub: cap(q.g.t), color: ok ? 'var(--grn)' : 'var(--yel)', count: 3, ms: 4300, then: cont });
+      else overlay({ emoji: ok ? '🧍' : '🙊', text: ok ? 'Pintar, kamu diam!' : 'Ups, harus diam!', sub: who ? `Itu ${who}, bukan Ibu.` : 'Tidak ada kata "Ibu berkata".', color: ok ? 'var(--grn)' : 'var(--yel)', ms: 2600, then: cont });
+    }, 650);
+  }
+  later(next, 300);
+}
+
+function SimonKelasSetup() {
+  let lv = 'mudah', jeda = 7;
+  shell('Mode Kelas', `
+    <div class="intro"><div class="intro-e">📺</div><div>Guru memilih tingkat dan lama tiap perintah, lalu tekan <b>Mulai</b>. Anak-anak bergerak (atau diam) tanpa menyentuh layar.</div></div>
+    <h2 class="sub">Tingkat</h2><div class="chips" id="cLv">${Object.entries(LV).map(([k, v]) => `<button class="chip ${k === lv ? 'on' : ''}" data-v="${k}">${v.e} ${v.nama}</button>`).join('')}</div>
+    <h2 class="sub">Lama tiap perintah</h2><div class="chips" id="cJd">${[5, 7, 10].map(s => `<button class="chip ${s === jeda ? 'on' : ''}" data-v="${s}">⏱️ ${s} detik</button>`).join('')}</div>
+    <div class="levels" style="margin-top:26px"><button class="btn" id="mulai" style="--c:var(--grn);--cd:var(--grn-d)">▶️ Mulai</button></div>`, SimonMenu);
+  const chips = (id, set) => $$(`#${id} .chip`).forEach(c => c.onclick = () => { Sfx.click(); $$(`#${id} .chip`).forEach(x => x.classList.remove('on')); c.classList.add('on'); set(c.dataset.v); });
+  chips('cLv', v => lv = v); chips('cJd', v => jeda = +v);
+  $('#mulai').onclick = () => { Sfx.click(); go(SimonKelasPlay, lv, jeda); };
+}
+
+function SimonKelasPlay(lv, jeda) {
+  const P = SIMON_LV[lv], N = 15;
+  const S = { i: 0, phase: 'show', paused: false, q: null };
+  shell('Mode Kelas', `
+    <div class="kelas-stage" id="ks"><div class="cue" id="cue"></div><div class="kelas-e" id="ke"></div><div class="kelas-t" id="kt"></div><div class="fb-s" id="kn"></div></div>
+    <div class="kelas-ctrl">
+      <button class="btn" id="pp" style="--c:var(--blu);--cd:var(--blu-d)">⏸️ Jeda</button>
+      <button class="btn" id="rp" style="--c:var(--teal);--cd:var(--teal-d)">🔊 Ulangi</button>
+      <button class="btn" id="nx" style="--c:var(--pur);--cd:var(--pur-d)">⏭️ Berikutnya</button>
+    </div>`, SimonKelasSetup);
+  const clear = () => { timers.forEach(clearTimeout); timers = []; };
+  function show() {
+    if (S.i >= N) return finish();
+    S.phase = 'show'; S.q = simonQuestion(P); const q = S.q;
+    $('#ks').className = 'kelas-stage' + (q.ibu ? ' ibu' : '');
+    $('#cue').textContent = q.prefix || ' '; $('#cue').className = 'cue ' + (q.ibu ? 'on' : q.prefix ? 'fake' : 'none');
+    $('#ke').textContent = '👂'; $('#kt').textContent = cap(q.g.t) + '!';
+    $('#kn').textContent = `Perintah ${S.i + 1} dari ${N}`;
+    restart($('#ks'), 'pop');
+    Voice.say(q.say);
+    later(reveal, jeda * 1000);
+  }
+  function reveal() {
+    S.phase = 'reveal'; const q = S.q;
+    if (q.ibu) { $('#ke').textContent = q.g.e; $('#kt').textContent = '✅ Ibu berkata, semua bergerak!'; Sfx.ok(); Voice.say('Ibu berkata, jadi semua bergerak. Hebat!'); }
+    else { $('#ke').textContent = '🧍'; $('#kt').textContent = q.prefix ? `${q.prefix.split(' ')[0]} bukan Ibu, harus diam!` : 'Tidak ada "Ibu berkata", harus diam!'; Sfx.pop(); Voice.say(q.prefix ? `Itu ${q.prefix.split(' ')[0]}, bukan Ibu. Siapa yang tetap diam? Hebat!` : 'Tidak ada Ibu berkata. Siapa yang tetap diam? Hebat!'); }
+    restart($('#ke'), 'pop');
+    later(() => { S.i++; show(); }, 3800);
+  }
+  function finish() {
+    $('#ks').className = 'kelas-stage ibu'; $('#cue').textContent = 'Selesai'; $('#cue').className = 'cue on';
+    $('#ke').textContent = '🏆'; $('#kt').textContent = 'Hebat! Semua sudah berlatih!'; $('#kn').textContent = 'Beri tepuk tangan untuk semua teman 👏';
+    $('#pp').disabled = true; $('#nx').textContent = '🔁 Main lagi';
+    Sfx.win(); confetti(70); Voice.say('Hebat! Semua sudah berlatih. Beri tepuk tangan untuk semua teman!');
+    S.phase = 'done';
+  }
+  $('#pp').onclick = () => {
+    Sfx.click();
+    if (!S.paused) { S.paused = true; clear(); Voice.stop(); $('#pp').textContent = '▶️ Lanjut'; }
+    else { S.paused = false; $('#pp').textContent = '⏸️ Jeda'; if (S.phase === 'show') { Voice.say(S.q.say); later(reveal, jeda * 1000); } else later(() => { S.i++; show(); }, 1200); }
+  };
+  $('#rp').onclick = () => { if (S.q && S.phase !== 'done') Voice.say(S.q.say); };
+  $('#nx').onclick = () => { Sfx.click(); if (S.phase === 'done') return go(SimonKelasPlay, lv, jeda); clear(); S.paused = false; $('#pp').textContent = '⏸️ Jeda'; if (S.phase === 'show') reveal(); else { S.i++; show(); } };
+  Pause.hook = () => { if (!S.paused && S.phase !== 'done') $('#pp').click(); };
+  later(show, 400);
+}
+
+/* ===================== KOKI & PASAR ===================== */
+function PeranMenu() {
+  shell('Koki & Pasar', `
+    <p class="hello pop">Hari ini kamu mau jadi apa?</p>
+    <div class="tiles">
+      <button class="tile pop" id="tPasar" style="--c:var(--grn);--cd:var(--grn-d)"><div class="te">🧺</div><div class="tt">Penjual di Pasar</div><div class="ts">Layani pembeli, hitung barangnya, terima uangnya.</div><div class="tstar">${starStr(save.best.pasar || 0)}</div></button>
+      <button class="tile pop" id="tKoki" style="--c:var(--pri);--cd:var(--pri-d);animation-delay:90ms"><div class="te">👩‍🍳</div><div class="tt">Koki Hebat</div><div class="ts">Baca resep bergambar, masukkan bahan, lalu aduk!</div><div class="tstar">${starStr(save.best.koki || 0)}</div></button>
+    </div>`);
+  Voice.say('Hari ini kamu mau jadi apa? Penjual di pasar, atau koki hebat?');
+  $('#tPasar').onclick = () => { Sfx.click(); go(LevelScreen, { title: 'Penjual di Pasar', e: '🧺', text: 'Pembeli akan datang dan memesan barang. Ketuk barang di lapak sesuai jumlah pesanan, lalu tekan <b>Berikan</b>.', say: 'Kamu jadi penjual di pasar. Ketuk barang sesuai pesanan pembeli, lalu tekan berikan.', play: PasarPlay, back: PeranMenu }); };
+  $('#tKoki').onclick = () => { Sfx.click(); go(LevelScreen, { title: 'Koki Hebat', e: '👩‍🍳', text: 'Lihat resep bergambar. Ketuk bahan yang ada di resep supaya masuk ke panci, lalu aduk!', say: 'Kamu jadi koki hebat. Lihat resepnya, masukkan bahan yang benar ke panci, lalu aduk.', play: KokiPlay, back: PeranMenu }); };
+}
+function LevelScreen(o) {
+  shell(o.title, `<div class="intro pop"><div class="intro-e">${o.e}</div><div>${o.text}</div></div>
+    <h2 class="sub">Pilih tingkat</h2><div class="levels">${levelBtns()}</div>`, o.back);
+  Voice.say(o.say);
+  bindLevels(lv => go(o.play, lv));
+}
+
+function PasarPlay(lv) {
+  const P = PASAR_LV[lv], N = 5;
+  const S = { i: 0, ok: 0, coins: 0, order: null, bag: {}, first: true, hint: false, busy: false };
+  shell('Penjual di Pasar', `${dotsHTML(N)}
+    <div class="cust-row">
+      <div class="cust" id="cust"></div>
+      <div class="bubble" id="order"></div>
+      <button class="icon-btn" id="rep" aria-label="Dengar pesanan lagi">🔊</button>
+      <div class="kas" id="kas" aria-label="Uang terkumpul">💰 <span id="coins">0</span></div>
+    </div>
+    <div class="lapak-title">🧺 Lapakku (ketuk barang untuk dimasukkan ke keranjang)</div>
+    <div class="lapak" id="lapak"></div>
+    <div class="bag-row">
+      <div class="bag" id="bag" aria-label="Keranjang"></div>
+      <button class="btn" id="give" style="--c:var(--grn);--cd:var(--grn-d)">🛍️ Berikan</button>
+    </div>
+    <div class="hint-s">Ketuk barang di keranjang untuk mengembalikannya ke lapak.</div>`, PeranMenu);
+  $$('#dots i')[0].classList.add('now');
+  const orderText = o => o.map(x => `${ANGKA[x.q]} ${x.it.n}`).join(' dan ');
+  const say = () => Voice.say(`Halo, saya mau beli ${orderText(S.order)}.`);
+  $('#rep').onclick = say;
+
+  function next() {
+    if (S.i >= N) return Result({ game: 'pasar', ok: S.ok, total: N, again: () => go(PasarPlay, lv), back: PeranMenu });
+    const types = shuffle(BARANG).slice(0, P.jenis);
+    S.order = types.map(it => ({ it, q: P.min + rand(P.max - P.min + 1) }));
+    S.bag = {}; S.first = true; S.hint = false; S.busy = false;
+    const stall = shuffle([...types, ...shuffle(BARANG.filter(b => !types.includes(b))).slice(0, 6 - types.length)]);
+    $('#cust').textContent = pick(PEMBELI); restart($('#cust'), 'slide');
+    $('#order').innerHTML = S.order.map(x => P.gambar
+      ? `<span class="order-pic">${x.it.e.repeat(x.q)}</span>`
+      : `<span class="num">${x.q}</span><span class="order-pic">${x.it.e}</span>`).join('<span style="font-size:30px">+</span>');
+    restart($('#order'), 'pop');
+    $('#lapak').innerHTML = stall.map((b, k) => `<button class="item pop" data-id="${b.id}" style="animation-delay:${k * 50}ms">${b.e}<span>${cap(b.n)}</span></button>`).join('');
+    $$('#lapak .item').forEach(btn => btn.onclick = () => add(btn.dataset.id, btn));
+    renderBag();
+    later(say, 450);
+  }
+  function add(id, btn) {
+    if (S.busy) return;
+    const n = (S.bag[id] || 0);
+    if (n >= 10) return;
+    S.bag[id] = n + 1;
+    const it = BARANG.find(b => b.id === id);
+    fly(it.e, btn, $('#bag')); Sfx.pop();
+    later(renderBag, 300);
+    Voice.say(ANGKA[S.bag[id]] || String(S.bag[id]));
+  }
+  function remove(id) {
+    if (S.busy || !S.bag[id]) return;
+    S.bag[id]--; if (!S.bag[id]) delete S.bag[id];
+    Sfx.click(); renderBag();
+  }
+  function renderBag() {
+    const ids = Object.keys(S.bag);
+    $('#bag').innerHTML = ids.length ? ids.map(id => { const it = BARANG.find(b => b.id === id); return `<button class="bag-g" data-id="${id}" aria-label="${S.bag[id]} ${it.n}">${it.e.repeat(S.bag[id])}${S.hint ? `<b>${S.bag[id]}</b>` : ''}</button>`; }).join('') : '<span class="bag-empty">Keranjang masih kosong</span>';
+    $$('#bag .bag-g').forEach(b => b.onclick = () => remove(b.dataset.id));
+  }
+  $('#give').onclick = () => {
+    if (S.busy) return;
+    const ids = Object.keys(S.bag);
+    if (!ids.length) { Sfx.bad(); restart($('#bag'), 'shake'); Voice.say('Keranjangnya masih kosong. Ketuk barangnya dulu ya.'); return; }
+    let problem = '';
+    for (const x of S.order) { const have = S.bag[x.it.id] || 0; if (have < x.q) { problem = `${cap(x.it.n)}nya kurang.`; break; } if (have > x.q) { problem = `${cap(x.it.n)}nya kebanyakan.`; break; } }
+    if (!problem) { const extra = ids.find(id => !S.order.some(x => x.it.id === id)); if (extra) problem = `Saya tidak beli ${BARANG.find(b => b.id === extra).n}.`; }
+    if (problem) {
+      S.first = false; S.hint = true; renderBag(); Sfx.bad(); restart($('#bag'), 'shake');
+      Voice.say(`Hmm, ${problem} Ayo hitung lagi. Saya mau ${orderText(S.order)}.`);
+      return;
+    }
+    // benar
+    S.busy = true; if (S.first) S.ok++; markDot(S.i, S.first); Sfx.ok();
+    const total = S.order.reduce((a, x) => a + x.q, 0);
+    $('#cust').textContent = '😊'; restart($('#cust'), 'pop');
+    Voice.say(`Terima kasih! Ini uangnya: ${ANGKA.slice(1, total + 1).join(', ')} koin.`);
+    $('#order').innerHTML = '<span style="font-size:24px">Terima kasih! 💛</span> ';
+    for (let k = 1; k <= total; k++) later(() => {
+      S.coins++; $('#coins').textContent = S.coins; Sfx.coin();
+      $('#order').insertAdjacentHTML('beforeend', `<span class="coin">${k}</span>`);
+      restart($('#kas'), 'pop');
+    }, 700 + k * 520);
+    later(() => { S.i++; next(); }, 700 + total * 520 + 1800);
+  };
+  later(next, 300);
+}
+
+function KokiPlay(lv) {
+  const P = KOKI_LV[lv], N = 4;
+  const list = shuffle(RESEP).slice(0, N);
+  const S = { i: 0, ok: 0, r: null, added: [], miss: 0, phase: 'idle', stir: 0 };
+  shell('Koki Hebat', `${dotsHTML(N)}
+    <div class="cust-row"><div class="cust" id="cust"></div><div class="bubble" id="order"></div><button class="icon-btn" id="rep" aria-label="Dengar lagi">🔊</button></div>
+    <div class="kitchen">
+      <div class="resep"><div class="resep-h">📜 Resep</div><div class="resep-name" id="rname"></div><div class="resep-list" id="rlist"></div></div>
+      <div class="pot-wrap"><div class="pot" id="pot"><div class="pot-in" id="potIn"></div></div><div class="pot-label" id="plabel">Panci</div></div>
+    </div>
+    <div id="lower">
+      <div class="lapak-title">🧺 Bahan di dapur</div>
+      <div class="lapak" id="rak"></div>
+    </div>
+    <div class="aduk-row" id="adukRow" hidden><button class="btn" id="aduk" style="--c:var(--yel);--cd:var(--yel-d);color:var(--ink)">🥄 Aduk! <span id="adukN"></span></button></div>`, PeranMenu);
+  $$('#dots i')[0].classList.add('now');
+  const nm = id => BAHAN[id][1], em = id => BAHAN[id][0];
+  const orderSay = () => Voice.say(`Koki, tolong buatkan ${S.r.nama}! Bahannya: ${S.r.bahan.map(nm).join(', ')}.` + (P.urut ? ' Masukkan sesuai urutan ya.' : ''));
+  $('#rep').onclick = () => { if (!S.r) return; if (S.phase === 'aduk') Voice.say(`Ketuk aduk ${ANGKA[P.aduk]} kali.`); else orderSay(); };
+
+  function next() {
+    if (S.i >= N) return Result({ game: 'koki', ok: S.ok, total: N, again: () => go(KokiPlay, lv), back: PeranMenu });
+    const r = S.r = list[S.i]; S.added = []; S.miss = 0; S.phase = 'bahan'; S.stir = 0;
+    $('#cust').textContent = pick(PEMBELI); restart($('#cust'), 'slide');
+    $('#order').innerHTML = `<span>Tolong buatkan <b>${r.nama}</b></span><span class="order-pic">${r.e}</span>`; restart($('#order'), 'pop');
+    $('#rname').textContent = `${r.e} ${r.nama}`;
+    $('#rlist').innerHTML = r.bahan.map((id, k) => `<span class="ri" data-id="${id}" title="${nm(id)}">${P.urut ? `<i>${k + 1}</i>` : ''}${em(id)}</span>`).join('');
+    $('#pot').className = 'pot'; $('#potIn').innerHTML = ''; $('#plabel').textContent = 'Panci';
+    const extra = shuffle(Object.keys(BAHAN).filter(id => !r.bahan.includes(id))).slice(0, P.rak - r.bahan.length);
+    $('#rak').innerHTML = shuffle([...r.bahan, ...extra]).map((id, k) => `<button class="item pop" data-id="${id}" style="animation-delay:${k * 45}ms">${em(id)}<span>${cap(nm(id))}</span></button>`).join('');
+    $$('#rak .item').forEach(b => b.onclick = () => put(b.dataset.id, b));
+    $('#lower').hidden = false; $('#adukRow').hidden = true;
+    later(orderSay, 450);
+  }
+  function put(id, btn) {
+    if (S.phase !== 'bahan' || S.added.includes(id)) return;
+    const r = S.r;
+    if (!r.bahan.includes(id)) { S.miss++; Sfx.bad(); restart(btn, 'shake'); Voice.say(`Ups, ${nm(id)} tidak ada di resep ${r.nama}.`); return; }
+    const need = r.bahan[S.added.length];
+    if (P.urut && id !== need) { S.miss++; Sfx.bad(); restart(btn, 'shake'); Voice.say(`Tunggu dulu, masukkan ${nm(need)} dulu ya.`); return; }
+    S.added.push(id); btn.classList.add('used');
+    fly(em(id), btn, $('#pot')); Sfx.pop();
+    later(() => { $('#potIn').insertAdjacentHTML('beforeend', `<span class="pop">${em(id)}</span>`); const ri = $(`#rlist .ri[data-id="${id}"]`); ri && ri.classList.add('done'); restart($('#pot'), 'stir'); }, 380);
+    if (S.added.length === r.bahan.length) {
+      S.phase = 'aduk';
+      Voice.say(`${cap(nm(id))}. Semua bahan sudah masuk! Sekarang ketuk aduk ${ANGKA[P.aduk]} kali.`);
+      later(() => { $('#lower').hidden = true; $('#adukRow').hidden = false; $('#adukN').textContent = `0/${P.aduk}`; restart($('#adukRow'), 'pop'); $('#pot').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);
+    } else Voice.say(cap(nm(id)));
+  }
+  $('#aduk').onclick = () => {
+    if (S.phase !== 'aduk') return;
+    S.stir++; $('#adukN').textContent = `${S.stir}/${P.aduk}`;
+    Sfx.stir(S.stir); restart($('#pot'), 'stir'); Voice.say(ANGKA[S.stir] || String(S.stir));
+    if (S.stir >= P.aduk) {
+      S.phase = 'done'; const r = S.r, perfect = S.miss === 0;
+      if (perfect) S.ok++; markDot(S.i, perfect);
+      later(() => {
+        $('#adukRow').hidden = true; $('#pot').className = 'pot big'; $('#potIn').innerHTML = `<span class="pop">${r.e}</span>`; $('#plabel').textContent = r.nama;
+        $('#cust').textContent = '😋'; Sfx.win(); confetti(30);
+        Voice.say(`Wah, ${r.nama} sudah siap! Hmm, enak sekali. Terima kasih, Koki!`);
+        overlay({ emoji: r.e, text: `${r.nama} siap!`, sub: 'Hmm, enak! Terima kasih, Koki! 😋', ms: 3200, then: () => { S.i++; next(); } });
+      }, 600);
+    }
+  };
+  later(next, 300);
+}
+
+/* ===================== TEBAK KARTU ===================== */
+const MODE_KARTU = {
+  dengar: { t: 'Dengar & Pilih', e: '👂', d: 'Dengarkan nama benda, lalu ketuk gambarnya.', c: 'var(--teal)', cd: 'var(--teal-d)' },
+  siapa: { t: 'Siapa Aku?', e: '🕵️', d: 'Dengarkan petunjuk, tebak siapa aku!', c: 'var(--pri)', cd: 'var(--pri-d)' },
+  huruf: { t: 'Huruf Awal', e: '🔤', d: 'Cari gambar yang namanya dimulai dengan huruf ini.', c: 'var(--blu)', cd: 'var(--blu-d)' }
+};
+function KartuMenu() {
+  shell('Tebak Kartu', `<p class="hello pop">Pilih cara bermain kartu</p>
+    <div class="tiles">${Object.entries(MODE_KARTU).map(([k, m], i) => `<button class="tile pop" data-m="${k}" style="--c:${m.c};--cd:${m.cd};animation-delay:${i * 90}ms"><div class="te">${m.e}</div><div class="tt">${m.t}</div><div class="ts">${m.d}</div></button>`).join('')}</div>`);
+  Voice.say('Pilih cara bermain kartu. Dengar dan pilih, siapa aku, atau huruf awal.');
+  $$('[data-m]').forEach(b => b.onclick = () => { Sfx.click(); go(KartuSetup, b.dataset.m); });
+}
+function KartuSetup(mode) {
+  const m = MODE_KARTU[mode]; let kat = 'semua';
+  shell(m.t, `<div class="intro pop"><div class="intro-e">${m.e}</div><div>${m.d}</div></div>
+    ${mode !== 'huruf' ? `<h2 class="sub">Pilih kelompok kartu</h2><div class="chips" id="cKat">${Object.entries(KATEGORI).map(([k, v]) => `<button class="chip ${k === kat ? 'on' : ''}" data-v="${k}">${v.e} ${v.n}</button>`).join('')}</div>` : ''}
+    <h2 class="sub">Pilih tingkat (jumlah kartu)</h2>
+    <div class="levels">${Object.entries(LV).map(([k, v], i) => `<button class="btn pop" data-lv="${k}" style="--c:${v.c};--cd:${v.cd};animation-delay:${i * 90}ms">${v.e} ${v.nama} (${{ mudah: 2, sedang: 3, seru: 4 }[k]} kartu)</button>`).join('')}</div>`, KartuMenu);
+  Voice.say(m.d);
+  $$('#cKat .chip').forEach(c => c.onclick = () => { Sfx.click(); $$('#cKat .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); kat = c.dataset.v; });
+  bindLevels(lv => go(KartuPlay, mode, kat, lv));
+}
+function KartuPlay(mode, kat, lv) {
+  const nC = { mudah: 2, sedang: 3, seru: 4 }[lv], N = mode === 'siapa' ? 6 : 10;
+  const pool = mode === 'huruf' || kat === 'semua' ? KARTU : KARTU.filter(k => k.k === kat);
+  let seq = []; while (seq.length < N) seq = seq.concat(shuffle(pool)); seq = seq.slice(0, N);
+  const first = c => c.n.charAt(0).toUpperCase();
+  const S = { i: 0, ok: 0, ans: null, firstTry: true, clue: 0, busy: false };
+  const m = MODE_KARTU[mode];
+  shell(m.t, `${dotsHTML(N)}
+    <div class="ask-row"><div class="speaker" style="font-size:clamp(56px,9vw,90px)">${m.e}</div><div class="bubble" id="ask"></div><button class="icon-btn" id="rep" aria-label="Dengar lagi">🔊</button></div>
+    <div class="cards n${nC}" id="cards" style="--n:${nC}"></div>`, () => KartuSetup(mode));
+  $$('#dots i')[0].classList.add('now');
+  const prompt = () => {
+    const a = S.ans;
+    if (mode === 'dengar') Voice.say(`Mana gambar ${low(a.n)}?`);
+    else if (mode === 'huruf') Voice.say(`Mana yang dimulai dengan huruf ${first(a)}?`);
+    else Voice.say(`Siapa aku? ${a.p.slice(0, S.clue).join(' ')}`);
+  };
+  $('#rep').onclick = prompt;
+
+  function next() {
+    if (S.i >= N) return Result({ game: 'kartu', ok: S.ok, total: N, again: () => go(KartuPlay, mode, kat, lv), back: () => KartuSetup(mode) });
+    const a = S.ans = seq[S.i]; S.firstTry = true; S.clue = 1; S.busy = false;
+    const others = shuffle(pool.filter(c => c !== a && (mode !== 'huruf' || first(c) !== first(a)))).slice(0, nC - 1);
+    const cards = shuffle([a, ...others]);
+    if (mode === 'dengar') $('#ask').innerHTML = `<div>Mana gambar <b>${low(a.n)}</b>?</div>`;
+    else if (mode === 'huruf') $('#ask').innerHTML = `<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap"><span class="letter">${first(a)} ${low(first(a))}</span><span>Mana yang dimulai dengan huruf <b>${first(a)}</b>?</span></div>`;
+    else renderClues();
+    restart($('#ask'), 'pop');
+    const nameHTML = c => mode === 'huruf' ? `<b>${c.n.charAt(0)}</b>${c.n.slice(1)}` : c.n;
+    $('#cards').innerHTML = cards.map((c, k) => `<button class="kartu flipped" data-n="${c.n}" style="--d:${k * 140}ms" aria-label="${c.n}"><div class="k-in"><div class="k-front"><div class="k-e">${c.e}</div><div class="k-n">${nameHTML(c)}</div></div><div class="k-back">❓</div></div></button>`).join('');
+    $$('#cards .kartu').forEach(b => b.onclick = () => choose(b));
+    later(() => { $$('#cards .kartu').forEach(b => b.classList.remove('flipped')); Sfx.tone(600, 0.08, 'triangle', 0.08); }, 250);
+    later(prompt, 500);
+  }
+  function renderClues() {
+    const a = S.ans;
+    $('#ask').innerHTML = `<div><b>Siapa aku?</b></div><div class="clues">${a.p.slice(0, S.clue).map((p, k) => `<div class="clue ${k === S.clue - 1 ? 'pop' : ''}">💡 ${p}</div>`).join('')}</div>
+      ${S.clue < a.p.length ? `<div class="clue-btn"><button class="btn" id="more" style="--c:var(--yel);--cd:var(--yel-d);color:var(--ink);min-height:56px;font-size:21px">💡 Petunjuk lagi</button></div>` : ''}`;
+    const more = $('#more'); if (more) more.onclick = () => { Sfx.click(); S.clue++; renderClues(); Voice.say(a.p[S.clue - 1]); };
+  }
+  function choose(btn) {
+    if (S.busy) return;
+    const c = KARTU.find(x => x.n === btn.dataset.n), a = S.ans;
+    if (c === a) {
+      S.busy = true; if (S.firstTry) S.ok++; markDot(S.i, S.firstTry);
+      btn.classList.add('win'); Sfx.ok(); confetti(24);
+      if (mode === 'dengar') Voice.say(`Benar! Ini ${low(a.n)}.`);
+      else if (mode === 'huruf') Voice.say(`Benar! ${a.n} dimulai dengan huruf ${first(a)}.`);
+      else Voice.say(`Benar! Aku ${low(a.n)}!`);
+      later(() => { S.i++; next(); }, 2300);
+    } else {
+      S.firstTry = false; btn.classList.add('no'); restart(btn, 'shake'); Sfx.bad();
+      if (mode === 'dengar') Voice.say(`Itu ${low(c.n)}. Ayo cari ${low(a.n)}.`);
+      else if (mode === 'huruf') Voice.say(`${c.n} dimulai dengan huruf ${first(c)}. Cari yang huruf ${first(a)}.`);
+      else {
+        if (S.clue < a.p.length) { S.clue++; renderClues(); Voice.say(`Bukan, aku bukan ${low(c.n)}. Dengar petunjuk berikutnya. ${a.p[S.clue - 1]}`); }
+        else Voice.say(`Bukan, aku bukan ${low(c.n)}. Coba lagi ya.`);
+      }
+    }
+  }
+  later(next, 300);
+}
+
+/* ===================== HASIL, STIKER, PANEL GURU ===================== */
+function Result({ game, ok, total, again, back }) {
+  const acc = ok / total, stars = acc >= 0.9 ? 3 : acc >= 0.6 ? 2 : 1;
+  save.best[game] = Math.max(save.best[game] || 0, stars); save.totalStars += stars;
+  const locked = STIKER.filter(s => !save.stickers.includes(s));
+  const stk = locked.length ? pick(locked) : null; if (stk) save.stickers.push(stk);
+  persist();
+  const msg = stars === 3 ? 'Luar biasa! Kamu hebat sekali!' : stars === 2 ? 'Bagus! Terus berlatih ya!' : 'Kamu sudah berani mencoba! Ayo main lagi!';
+  shell('Hasil Bermain', `<div class="result">
+    <div class="res-stars">${[0, 1, 2].map(i => `<span class="rs ${i < stars ? 'on' : ''}" style="animation-delay:${300 + i * 380}ms">★</span>`).join('')}</div>
+    <div class="res-t">${msg}</div>
+    <div class="res-s">Benar pada percobaan pertama: ${ok} dari ${total}</div>
+    ${stk ? `<div class="res-stk pop" style="animation-delay:1.5s">🎁 Stiker baru: <span class="stk-big">${stk}</span></div>` : ''}
+    <div class="res-btns">
+      <button class="btn" id="again" style="--c:var(--grn);--cd:var(--grn-d)">🔁 Main lagi</button>
+      <button class="btn" id="back" style="--c:var(--blu);--cd:var(--blu-d)">📋 Pilih lagi</button>
+      <button class="btn" id="home" style="--c:var(--pur);--cd:var(--pur-d)">🏠 Beranda</button>
+    </div></div>`, back);
+  for (let i = 0; i < stars; i++) later(() => Sfx.tone(700 + i * 180, 0.18, 'triangle', 0.12), 350 + i * 380);
+  if (stars >= 2) later(() => { Sfx.win(); confetti(70); }, 1300);
+  later(() => Voice.say(msg + (stk ? ' Kamu dapat stiker baru!' : '')), 500);
+  $('#again').onclick = () => { Sfx.click(); again(); };
+  $('#back').onclick = () => { Sfx.click(); go(back); };
+  $('#home').onclick = () => { Sfx.click(); go(Home); };
+}
+
+function Stiker() {
+  shell('Koleksi Stiker', `<p class="hello">Kamu punya <b>${save.stickers.length}</b> dari ${STIKER.length} stiker. Selesaikan permainan untuk dapat stiker baru!</p>
+    <div class="stickers">${STIKER.map((s, i) => save.stickers.includes(s) ? `<button class="stk pop" style="animation-delay:${i * 30}ms" data-s="${s}" aria-label="Stiker">${s}</button>` : `<div class="stk lock" aria-label="Stiker terkunci">🔒</div>`).join('')}</div>`);
+  Voice.say(`Kamu punya ${save.stickers.length} stiker.`);
+  $$('[data-s]').forEach(b => b.onclick = () => { Sfx.pop(); restart(b, 'pop'); });
+}
+
+function Gate() {
+  const a = 3 + rand(7), b = 3 + rand(7); let val = '';
+  shell('Khusus Guru / Orang Tua', `<div class="gate">
+    <p>Untuk orang dewasa: <b>${a} × ${b} = ?</b></p>
+    <div class="gate-in" id="gin">&nbsp;</div>
+    <div class="keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button data-k="del">⌫</button><button data-k="0">0</button><button data-k="ok" style="background:var(--grn);color:#fff">OK</button></div></div>`);
+  $$('.keypad button').forEach(btn => btn.onclick = () => {
+    const k = btn.dataset.k; Sfx.click();
+    if (k === 'del') val = val.slice(0, -1);
+    else if (k === 'ok') { if (+val === a * b) return go(Guru); val = ''; restart($('#gin'), 'shake'); Sfx.bad(); }
+    else if (val.length < 3) val += k;
+    $('#gin').innerHTML = val || '&nbsp;';
+  });
+}
+
+function Guru() {
+  const tog = (key, label, onTxt = 'Nyala', offTxt = 'Mati') => `<div class="set"><span>${label}</span><button class="tog ${save[key] ? 'on' : ''}" data-key="${key}" data-on="${onTxt}" data-off="${offTxt}">${save[key] ? onTxt : offTxt}</button></div>`;
+  const voiceInfo = !Voice.ok ? 'Perangkat ini tidak mendukung suara pembaca.' : Voice.v ? `Suara Bahasa Indonesia ditemukan (${Voice.v.name}).` : 'Suara Bahasa Indonesia belum ditemukan di perangkat ini, memakai suara bawaan. Di Android/Chrome biasanya tersedia otomatis.';
+  shell('Panel Guru', `
+    <div class="panel"><h3>⚙️ Pengaturan</h3>
+      ${tog('sfx', '🔔 Suara efek')}
+      ${tog('tts', '🗣️ Suara pembaca (membacakan perintah)')}
+      <div class="set"><span>🐢 Kecepatan bicara</span><span class="chips" id="rate"><button class="chip ${save.rate < 0.85 ? 'on' : ''}" data-r="0.75">Lambat</button><button class="chip ${save.rate >= 0.85 ? 'on' : ''}" data-r="0.95">Normal</button></span></div>
+      ${tog('santai', '🌿 Mode santai (Ibu Berkata tanpa batas waktu)')}
+      <div class="set"><span style="font-size:17px;color:var(--muted)">${voiceInfo}</span><button class="chip" id="tes">🔊 Tes suara</button></div>
+      <div class="set"><span>🧹 Hapus bintang dan stiker</span><button class="chip" id="reset" style="color:var(--red-d)">Hapus progres</button></div>
+    </div>
+    <div class="panel"><h3>🎯 Tujuan belajar</h3><ul>
+      <li><b>Ibu Berkata</b>: menyimak instruksi lisan, kontrol diri (menahan gerak saat tidak ada aba-aba), kosakata anggota tubuh dan gerak, serta gerak lokomotor dan non-lokomotor. Selaras dengan elemen <i>Jati Diri</i> serta <i>Dasar-dasar Literasi, Matematika, Sains, Teknologi, Rekayasa, dan Seni</i> (PAUD), Bahasa Indonesia (menyimak) dan PJOK Fase A.</li>
+      <li><b>Penjual di Pasar</b>: membilang 1 sampai 10, mencocokkan jumlah benda dengan lambang bilangan, mengenal uang sebagai alat tukar, dan peran sosial jual beli. Matematika Fase A (bilangan).</li>
+      <li><b>Koki Hebat</b>: membaca resep bergambar (literasi visual), memilah bahan yang sesuai dan tidak sesuai, mengikuti urutan langkah (tingkat Seru), dan membilang adukan.</li>
+      <li><b>Tebak Kartu</b>: kosakata benda sekitar, menyimpulkan dari ciri-ciri (Siapa Aku?), dan mengenal huruf awal kata (membaca permulaan, Bahasa Indonesia Fase A).</li>
+    </ul></div>
+    <div class="panel"><h3>👩‍🏫 Tips memakai di kelas</h3><ul>
+      <li>Untuk Ibu Berkata, pakai <b>Mode Kelas</b> di proyektor atau TV. Setelah anak hafal aturannya, ajak anak bergantian menjadi "Ibu/Bapak" yang memberi perintah.</li>
+      <li>Untuk Koki & Pasar, lanjutkan dengan bermain peran sungguhan memakai benda asli atau mainan di sudut pasar atau dapur kelas.</li>
+      <li>Pada Tebak Kartu tingkat Mudah, minta anak menirukan nama benda dengan suara keras setelah menjawab.</li>
+      <li>Bintang dihitung dari jawaban benar pada percobaan pertama. Anak selalu mendapat minimal 1 bintang supaya tetap semangat.</li>
+      <li>Isi permainan (gerakan, barang, resep, kartu) bisa diganti di bagian KONTEN pada kode halaman.</li>
+    </ul></div>`);
+  $$('.tog').forEach(b => b.onclick = () => { const k = b.dataset.key; save[k] = !save[k]; persist(); b.classList.toggle('on', save[k]); b.textContent = save[k] ? b.dataset.on : b.dataset.off; Sfx.click(); });
+  $$('#rate .chip').forEach(c => c.onclick = () => { save.rate = +c.dataset.r; persist(); $$('#rate .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); Voice.say('Halo, ayo bermain bersama!'); });
+  $('#tes').onclick = () => Voice.say('Halo! Ibu berkata, angkat kedua tangan!');
+  let armed = false;
+  $('#reset').onclick = () => {
+    if (!armed) { armed = true; $('#reset').textContent = 'Yakin? Ketuk lagi'; later(() => { armed = false; const r = $('#reset'); if (r) r.textContent = 'Hapus progres'; }, 3000); return; }
+    save.best = {}; save.totalStars = 0; save.stickers = []; persist(); $('#reset').textContent = 'Sudah dihapus ✔'; $('.top .pill').textContent = '⭐ 0';
+  };
+}
+
+go(Home);
+</script>
+</body>
+</html>
